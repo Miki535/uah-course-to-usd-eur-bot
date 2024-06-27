@@ -21,7 +21,7 @@ type Currency struct {
 }
 
 func main() {
-	botToken := "7160296460:AAEaXYyMH_YaxxXH03klolI_VTvG9yMsYlQ"
+	botToken := "token"
 
 	bot, err := telego.NewBot(botToken, telego.WithDefaultDebugLogger())
 
@@ -49,7 +49,7 @@ func main() {
 	bh.Handle(func(bot *telego.Bot, update telego.Update) {
 		chatId := tu.ID(update.Message.Chat.ID)
 		go parse("https://api.privatbank.ua/p24api/pubinfo?exchange&coursid=5", bot, chatId)
-	})
+	}, th.CommandEqual("course"))
 
 	bh.Start()
 }
@@ -67,11 +67,7 @@ func parse(url string, bot *telego.Bot, chatId telego.ChatID) {
 		log.Println(err)
 	}
 	for _, currency := range currencies {
-		//a := currency.Ccy
-		//b := currency.BaseCcy
-		c := currency.Buy
-		d := currency.Sale
-		fullMessage := fmt.Sprintf(c, d)
-		bot.SendMessage(tu.Message(chatId, fullMessage))
+		result := fmt.Sprintf("%s: Курс купівлі %s, Курс продажу %s", currency.Ccy, currency.Buy, currency.Sale)
+		bot.SendMessage(tu.Message(chatId, result))
 	}
 }
