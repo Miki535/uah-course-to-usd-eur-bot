@@ -6,6 +6,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/mymmrac/telego"
+	th "github.com/mymmrac/telego/telegohandler"
+	tu "github.com/mymmrac/telego/telegoutil"
 )
 
 type Currency struct {
@@ -16,10 +21,33 @@ type Currency struct {
 }
 
 func main() {
-	parse("https://api.privatbank.ua/p24api/pubinfo?exchange&coursid=5")
+	botToken := "token"
+
+	bot, err := telego.NewBot(botToken, telego.WithDefaultDebugLogger())
+
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	updates, _ := bot.UpdatesViaLongPolling(nil)
+
+	bh, _ := th.NewBotHandler(bot, updates)
+
+	defer bh.Stop()
+	defer bot.StopLongPolling()
+
+	bh.Handle(func(bot *telego.Bot, update telego.Update) {
+		chatId := tu.ID(update.Message.Chat.ID)
+		message := tu.Message(
+			chatId,
+			"Привіт! Щоб переглянути курс долара до гривні, або євро введіть /course",
+		)
+		bot.SendMessage(message)
+	}, th.CommandEqual("start"))
 }
 
-func parse(url string) {
+func parse(url string, bot telego.Bot, chatId telego.ChatID) {
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Println(err)
@@ -32,10 +60,11 @@ func parse(url string) {
 		log.Println(err)
 	}
 	for _, currency := range currencies {
-		a := currency.Ccy
+		//a := currency.Ccy
 		b := currency.BaseCcy
 		c := currency.Buy
-		d := currency.Sale
-		fmt.Println(a, b, c, d)
+		//d := currency.Sale
+		fullMessage := fmt.Sprintf(c, b)
+		bot.SendMessage(tu.Message(chatId, fullMessage))
 	}
 }
