@@ -25,7 +25,7 @@ func parse(url string) {
 		log.Println(err)
 	}
 	body, err := ioutil.ReadAll(resp.Body)
-	_ = resp.Body.Close()
+	resp.Body.Close()
 	var currencies []Currency
 	err = json.Unmarshal(body, &currencies)
 	if err != nil {
