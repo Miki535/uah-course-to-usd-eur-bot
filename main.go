@@ -64,10 +64,20 @@ func parse(url string, bot *telego.Bot, chatId telego.ChatID) {
 	var currencies []Currency
 	err = json.Unmarshal(body, &currencies)
 	if err != nil {
+		go SendMessage(bot, chatId, "Error while unmarshalling currencies!")
 		log.Println(err)
 	}
 	for _, currency := range currencies {
 		result := fmt.Sprintf("%s: Курс купівлі %s, Курс продажу %s", currency.Ccy, currency.Buy, currency.Sale)
-		bot.SendMessage(tu.Message(chatId, result))
+		go SendMessage(bot, chatId, result)
 	}
 }
+
+func SendMessage(bot *telego.Bot, chatId telego.ChatID, text string) {
+	_, err := bot.SendMessage(tu.Message(chatId, text))
+	if err != nil {
+		bot.SendMessage(tu.Message(chatId, "Error While Sending Message!"))
+		log.Println(err)
+	}
+}
+4
