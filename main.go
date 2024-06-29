@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/mymmrac/telego"
 	th "github.com/mymmrac/telego/telegohandler"
@@ -21,6 +22,7 @@ type Currency struct {
 }
 
 func main() {
+
 	botToken := "token"
 
 	bot, err := telego.NewBot(botToken, telego.WithDefaultDebugLogger())
@@ -48,13 +50,18 @@ func main() {
 
 	bh.Handle(func(bot *telego.Bot, update telego.Update) {
 		chatId := tu.ID(update.Message.Chat.ID)
-		go parse("https://api.privatbank.ua/p24api/pubinfo?exchange&coursid=5", bot, chatId)
+		go parse("https://api.privatbank.ua/p24api/pubinfo?exchange&coursid=5", bot, chatId, "", update)
+	}, th.AnyMessageWithText())
+
+	bh.Handle(func(bot *telego.Bot, update telego.Update) {
+		chatId := tu.ID(update.Message.Chat.ID)
+		go parse("https://api.privatbank.ua/p24api/pubinfo?exchange&coursid=5", bot, chatId, "true", update)
 	}, th.CommandEqual("course"))
 
 	bh.Start()
 }
 
-func parse(url string, bot *telego.Bot, chatId telego.ChatID) {
+func parse(url string, bot *telego.Bot, chatId telego.ChatID, test string, update telego.Update) {
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Println(err)
@@ -68,8 +75,19 @@ func parse(url string, bot *telego.Bot, chatId telego.ChatID) {
 		log.Println(err)
 	}
 	for _, currency := range currencies {
-		result := fmt.Sprintf("%s: Курс купівлі %s, Курс продажу %s", currency.Ccy, currency.Buy, currency.Sale)
-		go SendMessage(bot, chatId, result)
+		if test != "" {
+			result := fmt.Sprintf("%s: Курс купівлі %s, Курс продажу %s", currency.Ccy, currency.Buy, currency.Sale)
+			go SendMessage(bot, chatId, result)
+		} else {
+			updateText := update.Message.Text
+			values, err := strconv.ParseFloat(updateText, 64)
+			fff, err := strconv.ParseFloat(currency.Sale, 64)
+			if err != nil {
+				log.Println(err)
+			}
+			result := values / fff
+			SendMessage(bot, chatId, fmt.Sprint(result))
+		}
 	}
 }
 
