@@ -80,4 +80,3 @@ func SendMessage(bot *telego.Bot, chatId telego.ChatID, text string) {
 		log.Println(err)
 	}
 }
-4
